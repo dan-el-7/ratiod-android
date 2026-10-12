@@ -9,7 +9,10 @@ import {
   CheckCircle,
   GraduationCap,
   Loader,
+  UtensilsCrossed,
 } from "lucide-react";
+import { MessModal, getCurrentMealAndDay } from "@/components/desktop/mess/Mess";
+import { WEEKLY_MENU } from "@/data/messMenu";
 import {
   calculateOverallAttendance,
   getCriticalAttendance,
@@ -31,6 +34,7 @@ import { useDashboardAlerts } from "@/hooks/useDashboardAlerts";
 import { useApp } from "@/context/AppContext";
 import { UserAvatar } from "@/components/shared/UserAvatar";
 import { Haptics } from "@/utils/shared/haptics";
+import { useClassCancellations } from "@/hooks/useClassCancellations";
 
 const BEZIER = [0.34, 0.15, 0.16, 0.96] as const;
 
@@ -89,6 +93,7 @@ export default function Dashboard({
   isRefreshing?: boolean;
 }) {
   const router = useRouter();
+  const { cancelledClasses } = useClassCancellations();
   const { customDisplayName, profileSeed } = useApp();
   const {
     pullY,
@@ -105,6 +110,7 @@ export default function Dashboard({
     currentDayOrder,
     isHoliday,
     selectedDay,
+    selectedDayDate,
     nextWorkingDayOrder,
     isTomorrowHoliday,
     handleDaySwitch,
@@ -117,7 +123,17 @@ export default function Dashboard({
   }, [isAlertsOpen, setIsSwipeDisabled]);
 
   const [showExtraSlots, setShowExtraSlots] = useState(false);
+  const [isMessOpen, setIsMessOpen] = useState(false);
   const [customClasses, setCustomClasses] = useState<Record<number, any[]>>({});
+
+  const messSummary = useMemo(() => {
+    const { currentDay, currentMeal } = getCurrentMealAndDay();
+    const items = WEEKLY_MENU[currentDay]?.meals[currentMeal] || [];
+    return {
+      meal: currentMeal,
+      preview: items.slice(0, 3).join(", ").toLowerCase(),
+    };
+  }, []);
 
   useEffect(() => {
     const fetchCustoms = () => {
@@ -497,6 +513,8 @@ export default function Dashboard({
                 selectedDay={selectedDay}
                 currentDayOrder={currentDayOrder}
                 isHoliday={isHoliday}
+                cancelledClasses={cancelledClasses}
+                cancellationDate={selectedDayDate}
               />
             </motion.div>
 
@@ -640,63 +658,15 @@ export default function Dashboard({
                 />
               </div>
 
-              <div
-                onClick={() => {
-                  Haptics.medium();
-                  setIsAlertsOpen(true);
-                }}
-                className="w-full bg-theme-emphasis text-theme-bg border-[1.5px] border-black/5 rounded-[24px] p-2 pr-5 flex items-center gap-4 shadow-sm transition-transform cursor-pointer"
-              >
-                <div
-                  className="w-[50px] h-[50px] rounded-[18px] bg-theme-bg-alpha flex items-center justify-center shrink-0"
-                >
-                  <Bell
-                    size={20}
-                    strokeWidth={2.5}
-                    className="text-theme-bg"
-                  />
-                </div>
-                <div className="flex-1 flex flex-col justify-center min-w-0 py-0.5">
-                  <span
-                    className="text-[15px] font-bold lowercase leading-tight truncate mb-0.5 text-theme-bg"
-                    style={{ fontFamily: "var(--font-montserrat), sans-serif" }}
-                  >
-                    academic alerts
-                  </span>
-                  <AnimatePresence mode="wait">
-                    <motion.span
-                      key={currentAlertIndex}
-                      initial={{ opacity: 0, x: 5 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -5 }}
-                      className="text-[13px] font-medium lowercase text-theme-bg-70 truncate"
-                      style={{ fontFamily: "var(--font-afacad), sans-serif" }}
-                    >
-                      {allAlerts[currentAlertIndex]
-                        ? `${allAlerts[currentAlertIndex].title}: ${allAlerts[currentAlertIndex].desc.split(" / ")[0].substring(0, 20)}...`
-                        : overallPct < 75
-                          ? "attendance might be cooked."
-                          : "stats looking solid."}
-                    </motion.span>
-                  </AnimatePresence>
-                </div>
-                <ChevronRight
-                  size={22}
-                  strokeWidth={2}
-                  className="text-theme-bg-30 shrink-0"
-                />
-              </div>
-
+              {/* Row 2: Recent Marks - Full Width (~66px height) */}
               <div
                 onClick={() => {
                   Haptics.medium();
                   router.push("/marks");
                 }}
-                className="w-full bg-theme-card border-theme-subtle border-[1.5px] rounded-[24px] p-2 pr-5 flex items-center gap-4 shadow-sm transition-transform cursor-pointer"
+                className="w-full bg-theme-card border-theme-subtle border-[1.5px] rounded-[24px] p-2 pr-5 flex items-center gap-4 shadow-sm transition-transform cursor-pointer h-[66px]"
               >
-                <div
-                  className="w-[50px] h-[50px] rounded-[18px] bg-theme-surface flex items-center justify-center shrink-0"
-                >
+                <div className="w-[50px] h-[50px] rounded-[18px] bg-theme-surface flex items-center justify-center shrink-0">
                   <GraduationCap
                     size={20}
                     strokeWidth={2.5}
@@ -725,6 +695,81 @@ export default function Dashboard({
                   className="text-theme-subtle shrink-0"
                 />
               </div>
+
+              {/* Row 3: Academic Alerts (50%) & Mess Menu (50%) - Same ~66px height */}
+              <div className="grid grid-cols-2 gap-3 w-full">
+                {/* Academic Alerts */}
+                <div
+                  onClick={() => {
+                    Haptics.medium();
+                    setIsAlertsOpen(true);
+                  }}
+                  className="bg-theme-emphasis text-theme-bg border-[1.5px] border-black/5 rounded-[24px] p-2 pr-3.5 flex items-center gap-3 shadow-sm transition-transform cursor-pointer min-w-0 h-[66px]"
+                >
+                  <div className="w-[50px] h-[50px] rounded-[18px] bg-theme-bg-alpha flex items-center justify-center shrink-0">
+                    <Bell
+                      size={20}
+                      strokeWidth={2.5}
+                      className="text-theme-bg"
+                    />
+                  </div>
+                  <div className="flex-1 flex flex-col justify-center min-w-0 py-0.5">
+                    <span
+                      className="text-[14px] font-bold lowercase leading-tight truncate mb-0.5 text-theme-bg"
+                      style={{ fontFamily: "var(--font-montserrat), sans-serif" }}
+                    >
+                      alerts
+                    </span>
+                    <AnimatePresence mode="wait">
+                      <motion.span
+                        key={currentAlertIndex}
+                        initial={{ opacity: 0, x: 5 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -5 }}
+                        className="text-[12px] font-medium lowercase text-theme-bg-70 truncate"
+                        style={{ fontFamily: "var(--font-afacad), sans-serif" }}
+                      >
+                        {allAlerts[currentAlertIndex]
+                          ? allAlerts[currentAlertIndex].title.toLowerCase()
+                          : overallPct < 75
+                            ? "attendance cooked"
+                            : "all clear"}
+                      </motion.span>
+                    </AnimatePresence>
+                  </div>
+                </div>
+
+                {/* Mess Menu */}
+                <div
+                  onClick={() => {
+                    Haptics.medium();
+                    setIsMessOpen(true);
+                  }}
+                  className="bg-theme-card border-theme-subtle border-[1.5px] rounded-[24px] p-2 pr-3.5 flex items-center gap-3 shadow-sm transition-transform cursor-pointer min-w-0 h-[66px]"
+                >
+                  <div className="w-[50px] h-[50px] rounded-[18px] bg-theme-surface flex items-center justify-center shrink-0">
+                    <UtensilsCrossed
+                      size={20}
+                      strokeWidth={2.5}
+                      className={textClass}
+                    />
+                  </div>
+                  <div className="flex-1 flex flex-col justify-center min-w-0 py-0.5">
+                    <span
+                      className={`text-[14px] font-bold lowercase leading-tight ${textClass} truncate mb-0.5`}
+                      style={{ fontFamily: "var(--font-montserrat), sans-serif" }}
+                    >
+                      mess • {messSummary.meal}
+                    </span>
+                    <span
+                      className={`text-[12px] font-medium lowercase ${subTextClass} truncate`}
+                      style={{ fontFamily: "var(--font-afacad), sans-serif" }}
+                    >
+                      {messSummary.preview || "view menu"}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </motion.div>
           </motion.div>
         </motion.div>
@@ -735,6 +780,11 @@ export default function Dashboard({
         onClose={() => setIsAlertsOpen(false)}
         exams={exams}
         upcomingBreaks={upcomingBreaks}
+      />
+
+      <MessModal
+        isOpen={isMessOpen}
+        onClose={() => setIsMessOpen(false)}
       />
     </div>
   );

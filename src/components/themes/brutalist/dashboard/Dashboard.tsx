@@ -19,6 +19,10 @@ import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { Haptics } from "@/utils/shared/haptics";
 import { useApp } from "@/context/AppContext";
 import { UserAvatar } from "@/components/shared/UserAvatar";
+import { useClassCancellations } from "@/hooks/useClassCancellations";
+import { isClassCancelled } from "@/utils/timetable/classCancellations";
+import { MessModal, getCurrentMealAndDay } from "@/components/desktop/mess/Mess";
+import { WEEKLY_MENU } from "@/data/messMenu";
 
 const ScoreCounter = ({ value }: any) => {
   const nodeRef = useRef<any>(null);
@@ -119,10 +123,21 @@ const HomeDashboard = ({
   academia,
 }: HomeDashboardProps) => {
   const { profileSeed } = useApp();
+  const { cancelledClasses } = useClassCancellations();
   const router = useRouter();
   const [isAlertExpanded, setIsAlertExpanded] = useState(false);
   const [isMetricExpanded, setIsMetricExpanded] = useState(false);
+  const [isMessOpen, setIsMessOpen] = useState(false);
   const [metricMode, setMetricMode] = useState("attendance");
+
+  const messSummary = useMemo(() => {
+    const { currentDay, currentMeal } = getCurrentMealAndDay();
+    const items = WEEKLY_MENU[currentDay]?.meals[currentMeal] || [];
+    return {
+      meal: currentMeal,
+      preview: items.slice(0, 2).join(", ").toLowerCase(),
+    };
+  }, []);
 
   const isTargetAudience =
     (profile?.dept || "")
@@ -166,6 +181,18 @@ const HomeDashboard = ({
   const nextSubject = isHoliday
     ? "holiday today"
     : timeStatus?.nextClass?.course || "no more classes";
+  const nextClassCancelled = !isHoliday && !!timeStatus?.nextClass && isClassCancelled(
+    cancelledClasses,
+    timeStatus.nextClass,
+    academia?.effectiveDayOrder,
+    new Date(),
+  );
+  const currentClassCancelled = !isHoliday && !!timeStatus?.currentClass && isClassCancelled(
+    cancelledClasses,
+    timeStatus.currentClass,
+    academia?.effectiveDayOrder,
+    new Date(),
+  );
   const nextSubjectSplit = nextSubject.split(" ");
   const displayNext =
     nextSubjectSplit.length > 1
@@ -318,6 +345,12 @@ const HomeDashboard = ({
                         : timeStatus?.currentClass
                         ? `⭐ current: ${timeStatus.currentClass.course}${timeStatus.currentClass.type === "lab" ? " (P)" : ""}`
                         : "☕ currently free"}
+                      {currentClassCancelled && (
+                        <>
+                          <span className="mt-1 block text-center">{timeStatus.currentClass.time}</span>
+                          <span aria-label="Cancelled" className="mt-1 block text-center">(cancelled)</span>
+                        </>
+                      )}
                     </div>
                     {!isHoliday && timeStatus?.currentClass && (
                       <div
@@ -333,6 +366,7 @@ const HomeDashboard = ({
                         style={{ fontFamily: "Aonic" }}
                       >
                         ⏰ {timeStatus.nextClass.time}{timeStatus.nextClass.type === "lab" ? " (P)" : ""}
+                        {nextClassCancelled && <span aria-label="Cancelled" className="mt-1 block text-center">(cancelled)</span>}
                       </div>
                     )}
                     {isTomorrowHoliday && (
@@ -343,6 +377,17 @@ const HomeDashboard = ({
                         ✨ holiday tomorrow
                       </div>
                     )}
+                    <button
+                      onClick={() => {
+                        Haptics.selection();
+                        setIsMessOpen(true);
+                      }}
+                      className="bg-black text-white hover:bg-black/85 px-3 py-2 rounded-xl text-[10px] md:text-[11px] font-black lowercase flex-shrink-0 flex items-center gap-1.5 active:scale-95 transition-all border border-black shadow-sm"
+                      style={{ fontFamily: "Aonic" }}
+                    >
+                      <span>🍴</span>
+                      <span>mess: {messSummary.meal}</span>
+                    </button>
                     <button 
                       onClick={() => {
                         Haptics.selection();
@@ -698,6 +743,10 @@ const HomeDashboard = ({
           </LayoutGroup>
         </motion.div>
       </div>
+      <MessModal
+        isOpen={isMessOpen}
+        onClose={() => setIsMessOpen(false)}
+      />
     </div>
   );
 };
