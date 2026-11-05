@@ -77,8 +77,16 @@ export default function IsraelParticles() {
   const [stars, setStars] = useState<Star[]>([]);
   const [floater, setFloater] = useState<Floater | null>(null);
   const [ticker, setTicker] = useState<string | null>(null);
+  const [videoLive, setVideoLive] = useState(false);
   const starCounter = useRef(0);
   const isIsrael = theme?.includes("israel");
+
+  // the tel-aviv welcome's video takes over the screen — stand down while it plays
+  useEffect(() => {
+    const onVideo = (e: Event) => setVideoLive(Boolean((e as CustomEvent).detail));
+    window.addEventListener("israel:video", onVideo);
+    return () => window.removeEventListener("israel:video", onVideo);
+  }, []);
   const tickerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const spawnStarsAt = useCallback((x: number, y: number) => {
@@ -209,7 +217,7 @@ export default function IsraelParticles() {
     };
   }, [isIsrael, showTicker]);
 
-  if (!isIsrael) return null;
+  if (!isIsrael || videoLive) return null;
 
   return (
     <>
@@ -273,10 +281,6 @@ export default function IsraelParticles() {
                 exit={{ x: "60vw", opacity: 0 }}
                 transition={{ type: "spring", damping: 24, stiffness: 170 }}
                 className="block w-max max-w-full text-[11px] font-bold lowercase tracking-widest bg-theme-surface/90 border border-theme-subtle text-theme-muted px-4 py-2.5 rounded-2xl text-center backdrop-blur-sm"
-                style={{
-                  WebkitTextStroke: "1px #000",
-                  paintOrder: "stroke fill",
-                }}
               >
                 {ticker}
               </motion.span>
