@@ -38,14 +38,13 @@ export default function IsraelWelcome() {
     prevTheme = t;
   }, [theme]);
 
-  // tell the easter-egg layer to stand down while the video is on screen
+  // tell the easter-egg layer to stand down for the whole welcome
   useEffect(() => {
-    const active = show && stage === "video";
-    window.dispatchEvent(new CustomEvent("israel:video", { detail: active }));
+    window.dispatchEvent(new CustomEvent("israel:video", { detail: show }));
     return () => {
       window.dispatchEvent(new CustomEvent("israel:video", { detail: false }));
     };
-  }, [show, stage]);
+  }, [show]);
 
   const dismiss = (toDashboard = false) => {
     Haptics.selection();
@@ -119,11 +118,9 @@ export default function IsraelWelcome() {
                 io-fill 600ms ease forwards,
                 io-glow 2200ms ease-out forwards;
             }
-            .io-greet.io-l1 path { animation-delay: 0.15s, 1.4s, 0.15s; }
-            .io-greet.io-l2 path { animation-delay: 1.2s, 2.5s, 1.2s; }
-            .io-greet { animation: io-sharpen 800ms ease forwards; }
-            .io-greet.io-l1 { animation-delay: 1.4s; }
-            .io-greet.io-l2 { animation-delay: 2.5s; }
+            .io-greet.io-l1 path { animation-delay: 0.15s, 2.4s, 0.15s; }
+            .io-greet.io-l2 path { animation-delay: 1.2s, 2.4s, 1.2s; }
+            .io-greet { animation: io-sharpen 800ms ease forwards; animation-delay: 2.4s; }
             .io-hint { opacity: 0; animation: io-fade 600ms ease 3.9s forwards; }
           `}</style>
 
