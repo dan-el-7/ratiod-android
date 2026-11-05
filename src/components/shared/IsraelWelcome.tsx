@@ -77,8 +77,13 @@ export default function IsraelWelcome() {
         >
           <style>{`
             @keyframes io-in {
-              from { opacity: 0; filter: blur(14px); transform: scale(1.06); }
+              from { opacity: 0; filter: blur(16px); transform: scale(1.06); }
               to { opacity: 1; filter: blur(0); transform: scale(1); }
+            }
+            @keyframes io-glow {
+              0% { filter: drop-shadow(0 0 0 transparent); }
+              55% { filter: drop-shadow(0 0 22px rgba(77, 163, 255, 0.55)); }
+              100% { filter: drop-shadow(0 0 10px rgba(77, 163, 255, 0.18)); }
             }
             @keyframes io-trace { to { stroke-dashoffset: 0; } }
             @keyframes io-fill { to { fill-opacity: 1; } }
@@ -111,6 +116,8 @@ export default function IsraelWelcome() {
             }
             .io-greet.io-l1 path { animation-delay: 0.35s, 1.5s; }
             .io-greet.io-l2 path { animation-delay: 1.2s, 2.5s; }
+            .io-greet { animation: io-glow 2200ms ease-out forwards; }
+            .io-greet.io-l2 { animation-delay: 1.05s; }
             .io-hint { opacity: 0; animation: io-fade 600ms ease 3.9s forwards; }
           `}</style>
 
@@ -220,10 +227,16 @@ export default function IsraelWelcome() {
           <AnimatePresence>
             {stage === "sheet" && (
               <motion.div
-                initial={{ opacity: 0, y: 56, scale: 0.95, filter: "blur(10px)" }}
-                animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
-                exit={{ opacity: 0, y: 32 }}
-                transition={{ type: "spring", damping: 26, stiffness: 220, delay: 0.25 }}
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                transition={{ type: "spring", damping: 27, stiffness: 240 }}
+                drag="y"
+                dragConstraints={{ top: 0, bottom: 0 }}
+                dragElastic={0.55}
+                onDragEnd={(e, info) => {
+                  if (info.offset.y > 120 || info.velocity.y > 500) dismiss();
+                }}
                 className="absolute inset-x-0 bottom-0 px-5 pb-[calc(env(safe-area-inset-bottom,0px)+20px)]"
               >
                 <div className="bg-theme-bg border border-theme-subtle rounded-[28px] p-6 flex flex-col items-center">
