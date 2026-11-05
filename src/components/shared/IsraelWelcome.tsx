@@ -85,6 +85,10 @@ export default function IsraelWelcome() {
               55% { filter: drop-shadow(0 0 22px rgba(77, 163, 255, 0.55)); }
               100% { filter: drop-shadow(0 0 10px rgba(77, 163, 255, 0.18)); }
             }
+            @keyframes io-sharpen {
+              0% { filter: blur(5px) drop-shadow(0 0 20px rgba(77, 163, 255, 0.5)); }
+              100% { filter: blur(0) drop-shadow(0 0 9px rgba(77, 163, 255, 0.18)); }
+            }
             @keyframes io-trace { to { stroke-dashoffset: 0; } }
             @keyframes io-fill { to { fill-opacity: 1; } }
             @keyframes io-fade { to { opacity: 1; } }
@@ -112,12 +116,14 @@ export default function IsraelWelcome() {
               stroke-dasharray: 1;
               stroke-dashoffset: 1;
               animation: io-trace 1.15s cubic-bezier(0.65, 0, 0.35, 1) forwards,
-                io-fill 600ms ease forwards;
+                io-fill 600ms ease forwards,
+                io-glow 2200ms ease-out forwards;
             }
-            .io-greet.io-l1 path { animation-delay: 0.15s, 1.4s; }
-            .io-greet.io-l2 path { animation-delay: 1.2s, 2.5s; }
-            .io-greet { animation: io-glow 2200ms ease-out forwards; }
-            .io-greet.io-l2 { animation-delay: 1.05s; }
+            .io-greet.io-l1 path { animation-delay: 0.15s, 1.4s, 0.15s; }
+            .io-greet.io-l2 path { animation-delay: 1.2s, 2.5s, 1.2s; }
+            .io-greet { animation: io-sharpen 800ms ease forwards; }
+            .io-greet.io-l1 { animation-delay: 1.4s; }
+            .io-greet.io-l2 { animation-delay: 2.5s; }
             .io-hint { opacity: 0; animation: io-fade 600ms ease 3.9s forwards; }
           `}</style>
 
@@ -194,7 +200,7 @@ export default function IsraelWelcome() {
                   // begin the handoff while the clip is still moving — the
                   // motion blur of the final frames carries the transition
                   const v = e.currentTarget;
-                  if (stage === "video" && v.duration && v.duration - v.currentTime < 0.9) {
+                  if (stage === "video" && v.duration && v.duration - v.currentTime < 0.45) {
                     Haptics.success();
                     setStage("sheet");
                   }
@@ -205,32 +211,38 @@ export default function IsraelWelcome() {
                     setStage("sheet");
                   }
                 }}
-                className={`w-full h-full object-contain transition-all duration-[900ms] ease-out ${stage === "sheet" ? "brightness-[0.5] blur-[1.5px] scale-[1.07]" : ""}`}
+                className={`w-full h-full object-contain transition-all duration-[600ms] ease-out ${stage === "sheet" ? "brightness-[0.55] blur-[2px] scale-[1.06] translate-x-[1.5%]" : ""}`}
               />
               {stage === "sheet" && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.8, ease: "easeOut" }}
-                  className="absolute inset-0 bg-gradient-to-t from-[#0A1428] via-[#0A1428]/70 to-transparent"
-                />
-              )}
-              {stage === "video" && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setMuted((m) => {
-                      const next = !m;
-                      if (videoRef.current) videoRef.current.muted = next;
-                      Haptics.selection();
-                      return next;
-                    });
-                  }}
-                  className="absolute bottom-[calc(env(safe-area-inset-bottom,0px)+28px)] right-5 w-11 h-11 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center text-white active:scale-90 transition-transform"
-                  aria-label={muted ? "unmute" : "mute"}
-                >
-                  {muted ? <VolumeX size={19} /> : <Volume2 size={19} />}
-                </button>
+                <>
+                  {/* the clip ends on bright station blur — wash white over it,
+                      then resolve into the app's navy so the sheet feels like a
+                      continuation of the camera motion, not a cut */}
+                  <motion.div
+                    initial={{ opacity: 0, backgroundColor: "#F0EEE9" }}
+                    animate={{ opacity: 1, backgroundColor: "#0A1428" }}
+                    transition={{
+                      opacity: { duration: 0.4, ease: "easeOut" },
+                      backgroundColor: { duration: 1.1, ease: "easeOut", delay: 0.3 },
+                    }}
+                    className="absolute inset-0"
+                  />
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMuted((m) => {
+                        const next = !m;
+                        if (videoRef.current) videoRef.current.muted = next;
+                        Haptics.selection();
+                        return next;
+                      });
+                    }}
+                    className="absolute bottom-[calc(env(safe-area-inset-bottom,0px)+28px)] right-5 w-11 h-11 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center text-white active:scale-90 transition-transform"
+                    aria-label={muted ? "unmute" : "mute"}
+                  >
+                    {muted ? <VolumeX size={19} /> : <Volume2 size={19} />}
+                  </button>
+                </>
               )}
             </div>
           )}
@@ -238,16 +250,10 @@ export default function IsraelWelcome() {
           <AnimatePresence>
             {stage === "sheet" && (
               <motion.div
-                initial={{ y: "100%" }}
-                animate={{ y: 0 }}
-                exit={{ y: "100%" }}
-                transition={{ type: "spring", damping: 27, stiffness: 240 }}
-                drag="y"
-                dragConstraints={{ top: 0, bottom: 0 }}
-                dragElastic={0.55}
-                onDragEnd={(e, info) => {
-                  if (info.offset.y > 120 || info.velocity.y > 500) dismiss();
-                }}
+                initial={{ opacity: 0, y: 18, filter: "blur(8px)" }}
+                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.55, ease: "easeOut", delay: 0.4 }}
                 className="absolute inset-x-0 bottom-0 px-5 pb-[calc(env(safe-area-inset-bottom,0px)+20px)]"
               >
                 <div className="bg-theme-bg border border-theme-subtle rounded-[28px] p-6 flex flex-col items-center">
