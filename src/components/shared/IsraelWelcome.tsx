@@ -211,35 +211,32 @@ export default function IsraelWelcome() {
                 className={`w-full h-full object-contain transition-all duration-[600ms] ease-out ${stage === "sheet" ? "brightness-[0.55] blur-[2px] scale-[1.06] translate-x-[1.5%]" : ""}`}
               />
               {stage === "sheet" && (
-                <>
-                  {/* the clip ends on bright station blur — wash white over it,
-                      then resolve into the app's navy so the sheet feels like a
-                      continuation of the camera motion, not a cut */}
-                  <motion.div
-                    initial={{ opacity: 0, backgroundColor: "#F0EEE9" }}
-                    animate={{ opacity: 1, backgroundColor: "#0A1428" }}
-                    transition={{
-                      opacity: { duration: 0.4, ease: "easeOut" },
-                      backgroundColor: { duration: 1.1, ease: "easeOut", delay: 0.3 },
-                    }}
-                    className="absolute inset-0"
-                  />
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setMuted((m) => {
-                        const next = !m;
-                        if (videoRef.current) videoRef.current.muted = next;
-                        Haptics.selection();
-                        return next;
-                      });
-                    }}
-                    className="absolute bottom-[calc(env(safe-area-inset-bottom,0px)+28px)] right-5 w-11 h-11 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center text-white active:scale-90 transition-transform"
-                    aria-label={muted ? "unmute" : "mute"}
-                  >
-                    {muted ? <VolumeX size={19} /> : <Volume2 size={19} />}
-                  </button>
-                </>
+                <motion.div
+                  initial={{ opacity: 0, backgroundColor: "#F0EEE9" }}
+                  animate={{ opacity: 1, backgroundColor: "#0A1428" }}
+                  transition={{
+                    opacity: { duration: 0.4, ease: "easeOut" },
+                    backgroundColor: { duration: 1.1, ease: "easeOut", delay: 0.3 },
+                  }}
+                  className="absolute inset-0"
+                />
+              )}
+              {stage !== "greet" && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setMuted((m) => {
+                      const next = !m;
+                      if (videoRef.current) videoRef.current.muted = next;
+                      Haptics.selection();
+                      return next;
+                    });
+                  }}
+                  className="absolute bottom-[calc(env(safe-area-inset-bottom,0px)+28px)] right-5 w-11 h-11 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center text-white active:scale-90 transition-transform"
+                  aria-label={muted ? "unmute" : "mute"}
+                >
+                  {muted ? <VolumeX size={19} /> : <Volume2 size={19} />}
+                </button>
               )}
             </div>
           )}
