@@ -95,7 +95,7 @@ export default function IsraelWelcome() {
               opacity: 0;
               animation: io-in 1100ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
             }
-            .io-greet-item.is-l2 { animation-delay: 0.85s; }
+            .io-greet-item.is-l2 { animation-delay: 1.05s; }
             .io-greet path {
               fill: #EAF2FF;
               fill-opacity: 0;
@@ -106,11 +106,12 @@ export default function IsraelWelcome() {
               paint-order: stroke;
               stroke-dasharray: 1;
               stroke-dashoffset: 1;
-              animation: io-trace 1.15s cubic-bezier(0.16, 1, 0.3, 1) forwards,
-                io-fill 700ms ease 1.05s forwards;
+              animation: io-trace 1.15s cubic-bezier(0.65, 0, 0.35, 1) forwards,
+                io-fill 600ms ease forwards;
             }
-            .io-greet.is-l2 path { animation-delay: 0s, 0.9s; }
-            .io-hint { opacity: 0; animation: io-fade 600ms ease 2.7s forwards; }
+            .io-greet.io-l1 path { animation-delay: 0.35s, 1.5s; }
+            .io-greet.io-l2 path { animation-delay: 1.2s, 2.5s; }
+            .io-hint { opacity: 0; animation: io-fade 600ms ease 3.9s forwards; }
           `}</style>
 
           <svg width="0" height="0" className="absolute">
@@ -148,7 +149,7 @@ export default function IsraelWelcome() {
               <div className="relative flex flex-col items-center gap-[0.6em]" style={{ fontSize: "clamp(2.4rem, 9.5vw, 5rem)" }}>
                 <div className="io-greet-item">
                   <svg
-                    className="io-greet"
+                    className="io-greet io-l1"
                     viewBox={WELCOME_VIEWBOX}
                     style={{ width: "min(92vw, 720px)", height: "1.5em", overflow: "visible" }}
                   >
@@ -157,7 +158,7 @@ export default function IsraelWelcome() {
                 </div>
                 <div className="io-greet-item is-l2">
                   <svg
-                    className="io-greet is-l2"
+                    className="io-greet io-l2"
                     viewBox={TAVIV_VIEWBOX}
                     style={{ width: "min(76vw, 600px)", height: "1.5em", overflow: "visible" }}
                   >
@@ -186,8 +187,16 @@ export default function IsraelWelcome() {
                   Haptics.success();
                   setStage("sheet");
                 }}
-                className={`w-full h-full object-contain transition-all duration-700 ${stage === "sheet" ? "brightness-[0.35] blur-[2px] scale-[1.03]" : ""}`}
+                className={`w-full h-full object-contain transition-all duration-[1500ms] ease-out ${stage === "sheet" ? "brightness-[0.5] blur-[1.5px] scale-[1.07]" : ""}`}
               />
+              {stage === "sheet" && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.8, ease: "easeOut" }}
+                  className="absolute inset-0 bg-gradient-to-t from-[#0A1428] via-[#0A1428]/70 to-transparent"
+                />
+              )}
               {stage === "video" && (
                 <button
                   onClick={(e) => {
@@ -211,10 +220,10 @@ export default function IsraelWelcome() {
           <AnimatePresence>
             {stage === "sheet" && (
               <motion.div
-                initial={{ opacity: 0, y: 48, scale: 0.96 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
+                initial={{ opacity: 0, y: 56, scale: 0.95, filter: "blur(10px)" }}
+                animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
                 exit={{ opacity: 0, y: 32 }}
-                transition={{ type: "spring", damping: 24, stiffness: 220 }}
+                transition={{ type: "spring", damping: 26, stiffness: 220, delay: 0.25 }}
                 className="absolute inset-x-0 bottom-0 px-5 pb-[calc(env(safe-area-inset-bottom,0px)+20px)]"
               >
                 <div className="bg-theme-bg border border-theme-subtle rounded-[28px] p-6 flex flex-col items-center">
