@@ -77,7 +77,7 @@ export default function IsraelWelcome() {
         >
           <style>{`
             @keyframes io-in {
-              from { opacity: 0; filter: blur(16px); transform: scale(1.06); }
+              from { opacity: 0; filter: blur(10px); transform: scale(1.06); }
               to { opacity: 1; filter: blur(0); transform: scale(1); }
             }
             @keyframes io-glow {
@@ -114,7 +114,7 @@ export default function IsraelWelcome() {
               animation: io-trace 1.15s cubic-bezier(0.65, 0, 0.35, 1) forwards,
                 io-fill 600ms ease forwards;
             }
-            .io-greet.io-l1 path { animation-delay: 0.35s, 1.5s; }
+            .io-greet.io-l1 path { animation-delay: 0.15s, 1.4s; }
             .io-greet.io-l2 path { animation-delay: 1.2s, 2.5s; }
             .io-greet { animation: io-glow 2200ms ease-out forwards; }
             .io-greet.io-l2 { animation-delay: 1.05s; }
@@ -190,11 +190,22 @@ export default function IsraelWelcome() {
                 src="/israel/epsteindance.mp4"
                 playsInline
                 autoPlay
-                onEnded={() => {
-                  Haptics.success();
-                  setStage("sheet");
+                onTimeUpdate={(e) => {
+                  // begin the handoff while the clip is still moving — the
+                  // motion blur of the final frames carries the transition
+                  const v = e.currentTarget;
+                  if (stage === "video" && v.duration && v.duration - v.currentTime < 0.9) {
+                    Haptics.success();
+                    setStage("sheet");
+                  }
                 }}
-                className={`w-full h-full object-contain transition-all duration-[1500ms] ease-out ${stage === "sheet" ? "brightness-[0.5] blur-[1.5px] scale-[1.07]" : ""}`}
+                onEnded={() => {
+                  if (stage === "video") {
+                    Haptics.success();
+                    setStage("sheet");
+                  }
+                }}
+                className={`w-full h-full object-contain transition-all duration-[900ms] ease-out ${stage === "sheet" ? "brightness-[0.5] blur-[1.5px] scale-[1.07]" : ""}`}
               />
               {stage === "sheet" && (
                 <motion.div
