@@ -221,7 +221,7 @@ export default function IsraelWelcome() {
                   className="absolute inset-0"
                 />
               )}
-              {stage !== "greet" && (
+              {(
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
