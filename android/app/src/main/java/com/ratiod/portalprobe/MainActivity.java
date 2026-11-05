@@ -51,6 +51,7 @@ public class MainActivity extends BridgeActivity {
     private boolean previewHadError = false;
     private int previewRetries = 0;
     private int previewGeneration = 0;
+    private volatile boolean committing = false;
     private long lastPreviewRefreshAt = 0L;
     private int backdropColor = Color.parseColor("#050505");
 
@@ -97,6 +98,7 @@ public class MainActivity extends BridgeActivity {
         MainActivity activity = instance;
         if (activity != null) {
             activity.runOnUiThread(() -> {
+                activity.committing = false;
                 activity.applyBackdropColor(bgColor);
                 if (isDashboard(path)) {
                     // not ready yet? every dashboard arrival is a free retry
@@ -120,7 +122,11 @@ public class MainActivity extends BridgeActivity {
 
     private void navigateToDashboard() {
         if (webView == null) return;
-        updateBackEnabled(DASHBOARD_ROUTE);
+        // stay enabled through the commit window (guarded by `committing`) so a
+        // double-back can't fall through to exit; the route report or an 8s
+        // safety clears it, then the route report disables back as usual
+        committing = true;
+        mainHandler.postDelayed(() -> committing = false, 8000);
         webView.evaluateJavascript("window.location.assign('/dashboard')", null);
     }
 
@@ -187,6 +193,14 @@ public class MainActivity extends BridgeActivity {
         dashboardPreview.setOverScrollMode(View.OVER_SCROLL_NEVER);
         dashboardPreview.setWebViewClient(new WebViewClient() {
             @Override
+            public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                // the preview has no Capacitor bridge — route its requests through
+                // Capacitor's local asset server so https://localhost resolves here too
+                WebResourceResponse local = bridge.getLocalServer().shouldInterceptRequest(request);
+                return local != null ? local : super.shouldInterceptRequest(view, request);
+            }
+
+            @Override
             public void onReceivedError(WebView view, android.webkit.WebResourceRequest request, android.webkit.WebResourceError error) {
                 super.onReceivedError(view, request, error);
                 // net-error pages still fire onPageFinished — never trust them as a valid frame
@@ -243,8 +257,15 @@ public class MainActivity extends BridgeActivity {
         dashboardPreview.loadUrl(previewBaseUrl + DASHBOARD_ROUTE);
         Log.d(TAG, "preview refresh -> " + previewBaseUrl + DASHBOARD_ROUTE);
         // watchdog: if onPageFinished never arrives (stuck load), unstick and retry
-        mainHandler.postDelayed(() -> {
-            if (gen == previewGeneration && previewLoading && dashboardPreview != null && !gestureActive) {
+        mainHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (gen != previewGeneration || !previewLoading || dashboardPreview == null) return;
+                if (gestureActive) {
+                    // mid-gesture — re-check shortly instead of dropping the retry
+                    mainHandler.postDelayed(this, 2000);
+                    return;
+                }
                 Log.d(TAG, "preview watchdog: load stuck, retrying");
                 previewLoading = false;
                 previewRetries++;
@@ -343,6 +364,7 @@ public class MainActivity extends BridgeActivity {
 
         @Override
         public void handleOnBackStarted(@NonNull BackEventCompat backEvent) {
+            if (committing) return; // navigation already in flight
             cancelSettle();
             gestureActive = true;
             edge = backEvent.getSwipeEdge();
@@ -370,6 +392,7 @@ public class MainActivity extends BridgeActivity {
 
         @Override
         public void handleOnBackPressed() {
+            if (committing) return; // navigation already in flight
             boolean previewShown = dashboardPreview != null && dashboardPreview.getVisibility() == View.VISIBLE;
             Log.d(TAG, "back -> dashboard (preview=" + previewShown + ")");
             navigateToDashboard();

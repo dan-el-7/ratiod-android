@@ -30,13 +30,24 @@ export default function IsraelWelcome() {
   useEffect(() => {
     const t = theme ?? "";
     const isIsrael = t.includes("israel");
-    if (isIsrael && prevTheme !== null && !prevTheme.includes("israel")) {
+    // never hijack onboarding or the pre-auth screens — a fresh user picking
+    // israel on the theme slide would otherwise get a fullscreen takeover
+    const onboarded = localStorage.getItem("ratiod_onboarded") === "true";
+    const p = window.location.pathname;
+    const inAppShell = onboarded && !p.startsWith("/onboarding") && !p.startsWith("/login") && !p.startsWith("/setup") && p !== "/";
+    if (isIsrael && inAppShell && prevTheme !== null && !prevTheme.includes("israel")) {
       Haptics.success();
       setStage("greet");
       setShow(true);
+    } else if (!isIsrael && show) {
+      // theme switched away mid-welcome — tear it down
+      videoRef.current?.pause();
+      setShow(false);
+      setStage("greet");
+      setMuted(false);
     }
     prevTheme = t;
-  }, [theme]);
+  }, [theme, show]);
 
   // tell the easter-egg layer to stand down for the whole welcome
   useEffect(() => {
